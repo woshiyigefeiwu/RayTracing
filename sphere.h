@@ -8,6 +8,14 @@
 
 // 普通的球
 
+void get_sphere_uv(const vec3& p, double& u, double& v) 
+{
+    auto phi = atan2(p.z(), p.x());
+    auto theta = asin(p.y());
+    u = 1-(phi + pi) / (2*pi);
+    v = (theta + pi/2) / pi;
+}
+
 class sphere: public hittable 
 {
     public:
@@ -15,6 +23,8 @@ class sphere: public hittable
         sphere(vec3 cen, double r, shared_ptr<material> m) : center(cen), radius(r), mat_ptr(m) {};
 
         virtual bool hit(const ray& r, double tmin, double tmax, hit_record& rec) const;
+
+        virtual bool bounding_box(double t0, double t1, aabb& output_box) const;
 
     public:
         vec3 center;
@@ -45,6 +55,7 @@ bool sphere::hit(const ray& r, double t_min, double t_max, hit_record& rec) cons
             vec3 outward_normal = (rec.p - center) / radius;
             rec.set_face_normal(r, outward_normal);
             rec.mat_ptr = mat_ptr;
+            get_sphere_uv((rec.p-center)/radius, rec.u, rec.v);
             return true;
         }
 
@@ -64,6 +75,15 @@ bool sphere::hit(const ray& r, double t_min, double t_max, hit_record& rec) cons
     return false;
 }
 
+// 求包围盒
+bool sphere::bounding_box(double t0, double t1, aabb& output_box) const 
+{
+    output_box = aabb(center - vec3(radius, radius, radius), center + vec3(radius, radius, radius));
+    return true;
+}
+
+// -------------------------------------------------------------------------------------------------------
+
 // 运动中的球
 // 让它的球心在`time0`到`time1`的时间段内从`center0`线性运动到`center1`。超出这个时间段, 这个球心依然在动
 
@@ -76,6 +96,8 @@ class moving_sphere : public hittable
         {};
 
         virtual bool hit(const ray& r, double tmin, double tmax, hit_record& rec) const;
+
+        virtual bool bounding_box(double t0, double t1, aabb& output_box) const;
 
         vec3 center(double time) const;
 
@@ -127,6 +149,17 @@ bool moving_sphere::hit(const ray& r, double t_min, double t_max, hit_record& re
         }
     }
     return false;
+}
+
+// 对于`moving_sphere`, 我们先求球体在 t0 时刻的包围盒, 再求球体在 t1 时刻的包围盒, 然后再计算这两个盒子的包围盒:
+bool moving_sphere::bounding_box(double t0, double t1, aabb& output_box) const 
+{
+    aabb box0(center(t0) - vec3(radius, radius, radius), center(t0) + vec3(radius, radius, radius));
+    aabb box1(center(t1) - vec3(radius, radius, radius), center(t1) + vec3(radius, radius, radius));
+    
+    // 再求两个包围盒的包围盒
+    output_box = surrounding_box(box0, box1);
+    return true;
 }
 
 #endif

@@ -7,6 +7,7 @@
 
 #include "rtweekend.h"
 #include "hittable_list.h"
+#include "texture.h"
 
 class material 
 {
@@ -19,13 +20,19 @@ class material
                 scattered：发生散射后的下一条光线
         */
         virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const = 0;
+
+        // 发射光线函数(不是光源不用重写，默认为黑色)
+        virtual vec3 emitted(double u, double v, const vec3& p) const 
+        {
+            return vec3(0,0,0);
+        }
 };
 
 // 漫反射材质
 class lambertian : public material 
 {
     public:
-        lambertian(const vec3& a) : albedo(a) {}
+        lambertian(shared_ptr<texture> a) : albedo(a) {}
 
         virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const 
         {
@@ -33,12 +40,12 @@ class lambertian : public material
             vec3 scatter_direction = rec.normal + random_unit_vector();
             // 漫反射后的光线（确保你的材质在运算光线散射时, 散射光线与入射光线所存在的时间点相同）
             scattered = ray(rec.p, scatter_direction, r_in.time());
-            attenuation = albedo;
+            attenuation = albedo->value(rec.u, rec.v, rec.p);
             return true;
         }
 
     public:
-        vec3 albedo;
+        shared_ptr<texture> albedo;
 };
 
 // 金属材质
@@ -112,6 +119,43 @@ class dielectric : public material
 
     public:
         double ref_idx;
+};
+
+// 一种发光的材质
+class diffuse_light : public material  
+{
+    public:
+        diffuse_light(shared_ptr<texture> a) : emit(a) {}
+
+        virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const 
+        {
+            return false;
+        }
+
+        virtual vec3 emitted(double u, double v, const vec3& p) const 
+        {
+            return emit->value(u, v, p);
+        }
+
+    public:
+        shared_ptr<texture> emit;
+};
+
+// 对于散射的方向来说, 我们采用各项同性(isotropic)的随机单位向量大法
+class isotropic : public material 
+{
+    public:
+        isotropic(shared_ptr<texture> a) : albedo(a) {}
+
+        virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const  
+        {
+            scattered = ray(rec.p, random_in_unit_sphere(), r_in.time());
+            attenuation = albedo->value(rec.u, rec.v, rec.p);
+            return true;
+        }
+
+    public:
+        shared_ptr<texture> albedo;
 };
 
 #endif
