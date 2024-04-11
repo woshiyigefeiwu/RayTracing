@@ -29,13 +29,13 @@ hittable_list final_scene();
 
 int main()
 {
-    const int image_width = 1080;
-    const int image_height = 1080;
-    const int samples_per_pixel = 10000;
-
-    // const int image_width = 1920;
+    // const int image_width = 1080;
     // const int image_height = 1080;
-    // const int samples_per_pixel = 1000;
+    // const int samples_per_pixel = 10000;
+
+    const int image_width = 100;
+    const int image_height = 100;
+    const int samples_per_pixel = 1000;
 
     const int max_depth = 50;
     const auto aspect_ratio = double(image_width) / image_height;
