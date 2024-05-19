@@ -58,7 +58,7 @@ int main()
     double t0 = 0.0, t1 = 1.0;
     camera cam(lookfrom, lookat, vup, vfov, aspect_ratio, aperture, dist_to_focus, t0, t1);
 
-    for (int j = image_height-1; j >= 0; --j) 
+    for (int j = image_height-1; j >= 0; --j)
     {
         std::cerr << "\rScanlines remaining: " << j << ' ' << std::flush;
         for (int i = 0; i < image_width; ++i) 
